@@ -1,6 +1,12 @@
 Aspect Oriented Programming - Spring AOP
 ----------------------------------------
 
+Dependencies
+-----------
+1. org.springframework:spring-context:5.3.9
+2. org.springframework:spring-aspects:5.3.9
+
+
 Proxy Object
 -----------
 1. Proxy Object is an object that adds additional logic on top of object that is being proxied
