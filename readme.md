@@ -74,7 +74,7 @@ Proxy Object
          }
       }
        ```
-3. Spring Framework supports two kind of proxies:
+2. Spring Framework supports two kind of proxies:
    1. JDK Dynamic Proxy – used by default if target object implements interface
    2. Proxy class from java.lang.Reflection API used to create proxies
    3. Handler should implement InvocationHandler Interface
@@ -142,21 +142,134 @@ Proxy Object
             }
          }
          ```
-4. Limitations of JDK Dynamic Proxy:
+3. Limitations of JDK Dynamic Proxy:
    1. Requires proxy object to implement the interface
    2. Only interface methods will be proxied
    3. No support for self-invocation
-5. Limitations of CGLIB Proxy:
+4. Limitations of CGLIB Proxy:
    1. Does not work for final classes
    2. Does not work for final methods
    3. No support for self-invocation
-6. Proxy Advantages:
+5. Proxy Advantages:
    1. Ability to change behavior of existing beans without changing original code
    2. Separation of concerns (logging, transactions, security, …)
-7. Proxy Disadvantages:
+6. Proxy Disadvantages:
    1. May create code hard to debug
    2. Needs to use unchecked exception for exceptions not declared in original method
    3. May cause performance issues if before/after section in proxy code is using IO (Network,
       Disk)
    4. May cause unexpected equals' operator (==) results since Proxy Object and Proxied Object
       are two different objects
+
+Intro to AOP
+-----------
+1. AOP – Aspect Oriented Programming – A programming paradigm that complements
+   Object-oriented Programming (OOP) by providing a way to separate groups of crosscutting concerns from business logic code. This is achieved by ability to add
+   additional behavior to the code without having to modify the code itself. This is
+   achieved by specifying:
+2. Concepts
+   1. Location of the code which behavior should be altered – `Pointcut` is matched
+      with `Join point`
+   2. Code which should be executed that implements cross-cutting concern – `Advice`
+   3. `@EnableAspectJAutoProxy` should be placed at configuration file to identify the aspects
+   4. Example
+      ```java
+      // config
+      @Configuration
+      @ComponentScan
+      @EnableAspectJAutoProxy
+      public class ApplicationConfiguration {
+      }
+      
+      // Annotaion for Pointcut expression
+      public @interface PerformanceLogger {
+      }
+      
+      //Aspect
+      @Aspect
+      @Component
+      public class PerformanceLoggerAspect {
+
+          private Logger logger = Logger.getLogger("performance.logger");
+
+          @Around("@annotation(com.spring.professional.exam.tutorial.module02.question01.with.aop.annotations.      PerformanceLogger)")
+          public Object logPerformance(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
+              long startTime = System.currentTimeMillis();
+              try {
+                  return proceedingJoinPoint.proceed();
+              } finally {
+                  long finishTime = System.currentTimeMillis();
+                  Duration duration = Duration.ofMillis(finishTime - startTime);
+
+                  logger.info(String.format("Duration of %s execution was %s", proceedingJoinPoint.      getSignature(), duration));
+              }
+          }
+      }
+      //Joint Point method annotated with @PerformanceLogger
+      @Component
+      public class ComplexReportFormatter {
+      @PerformanceLogger
+      public FormattedReport formatReport(Report report) throws InterruptedException {
+      System.out.println("Formatting the report...");
+      Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+      System.out.println("Report Formatted");
+
+              return new FormattedReport(report);
+          }
+      }
+      
+      // Complex Logic
+      @Component
+      public class ComplexReportAction {
+          @Autowired
+          private ComplexReportFormatter complexReportFormatter;
+          
+          public void perform() throws InterruptedException {
+              FormattedReport formattedReport = complexReportFormatter.formatReport(report);
+          }
+      }
+      
+      //main
+      public class Runner {
+         public static void main(String[] args) throws InterruptedException {
+         AnnotationConfigApplicationContext context = new AnnotationConfigApplicationContext      (ApplicationConfiguration.class);
+         context.registerShutdownHook();
+
+              ComplexReportAction complexReportAction = context.getBean(ComplexReportAction.class);
+
+              complexReportAction.perform();
+         }
+      }
+
+       ``` 
+   5. Aspect Oriented Programming solves following challenges:
+      1. Allows proper implementation of Cross-Cutting Concerns
+      2. Solves Code Duplications by eliminating the need to repeat the code for
+         functionalities across different layers, such functionalities may include logging,
+         performance logging, monitoring, transactions, caching
+      3. Avoids mixing unrelated code, for example mixing transaction logic code
+         (commit, rollback) with business code makes code harder to read, by separating
+         concerns code is easier to read, interpret, maintain
+   6. Common cross-cutting concerns:
+      1. Logging
+      2. Performance Logging
+      3. Caching
+      4. Security
+      5. Transactions
+      6. Monitoring
+   7. Implementing cross-cutting concerns without using AOP, produces following
+      challenges:
+      1. Code duplications – Before/After code duplicated in all locations when normally
+         Advise would be applied, refactoring by extraction helps but does not fully solve
+         the problem
+      2. Mixing of concerns – business logic code mixed with logging, transactions,
+         caching makes code hard read and maintain
+
+
+
+
+
+
+
+      
+
